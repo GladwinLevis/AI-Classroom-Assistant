@@ -48,10 +48,29 @@ class Settings(BaseSettings):
 
     # Database Configuration
     DATABASE_URL: str = Field(
-        "postgresql+psycopg://postgres:<POSTGRES_PASSWORD>@localhost:5432/ai_classroom",
+        "sqlite+aiosqlite:///./ai_classroom.db",
         validation_alias="DATABASE_URL"
     )
     SYNC_DATABASE_URL: Optional[str] = Field(None, validation_alias="SYNC_DATABASE_URL")
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_db_connection(cls, v: Any) -> str:
+        if not v or not isinstance(v, str) or "<POSTGRES_PASSWORD>" in v:
+            return "sqlite+aiosqlite:///./ai_classroom.db"
+        
+        url = v.strip()
+        # Convert standard cloud postgres URLs (Neon/Supabase/Render) to async format
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and not url.startswith("postgresql+"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            
+        # Clean query parameters for asyncpg if needed
+        if "sslmode=require" in url and "ssl=" not in url:
+            url = url.replace("sslmode=require", "ssl=require")
+            
+        return url
 
     @property
     def sync_url(self) -> str:

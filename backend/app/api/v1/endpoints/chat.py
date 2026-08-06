@@ -1,6 +1,6 @@
 import logging
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Query, Path, Body, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
@@ -29,6 +29,9 @@ router = APIRouter()
 
 
 @router.post("/create", response_model=ChatSessionResponse, status_code=201)
+@router.post("/sessions", response_model=ChatSessionResponse, status_code=201)
+@router.post("", response_model=ChatSessionResponse, status_code=201)
+@router.post("/", response_model=ChatSessionResponse, status_code=201)
 async def create_chat_session(
     payload: ChatSessionCreate,
     current_user: User = Depends(get_current_active_user),
@@ -43,27 +46,22 @@ async def create_chat_session(
     return session
 
 
-@router.post("/send")
-@router.post("/message")
-async def send_chat_message(
-    session_id: Optional[UUID] = Query(None),
-    notes_id: Optional[UUID] = Query(None),
-    payload: Optional[dict] = Body(None),
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
+async def _process_chat_message(
+    session_id: Optional[UUID],
+    notes_id: Optional[UUID],
+    payload: Optional[dict],
+    current_user: User,
+    db: AsyncSession
 ):
-    """
-    Sends message to chat session and returns AI response.
-    """
     message_text = ""
     if payload:
-        message_text = payload.get("message_text") or payload.get("message") or ""
+        message_text = payload.get("message_text") or payload.get("message") or payload.get("content") or ""
     
-    PromptBuilderService.sanitize_input(message_text)
+    if message_text:
+        PromptBuilderService.sanitize_input(message_text)
 
     chat_service = ChatService(db)
     
-    # Handle session creation if no session_id passed
     target_session_id = session_id or (payload.get("session_id") if payload else None)
     if not target_session_id:
         sess = await chat_service.get_or_create_session(user_id=current_user.id, title=message_text[:30] or "New Chat")
@@ -72,7 +70,6 @@ async def send_chat_message(
         if isinstance(target_session_id, str):
             target_session_id = UUID(target_session_id)
 
-    # Collect response generator text
     response_tokens = []
     async for chunk in chat_service.process_user_message(
         user_id=current_user.id,
@@ -83,7 +80,51 @@ async def send_chat_message(
         response_tokens.append(chunk)
 
     full_response = "".join(response_tokens).replace("data: ", "").replace("\n\n", " ").strip()
-    return {"session_id": str(target_session_id), "response": full_response, "message": full_response}
+    return {
+        "id": str(uuid4()),
+        "session_id": str(target_session_id),
+        "response": full_response,
+        "message": full_response,
+        "ai_message": full_response,
+        "content": full_response
+    }
+
+
+@router.post("/send")
+@router.post("/message")
+async def send_chat_message_query(
+    session_id: Optional[UUID] = Query(None),
+    notes_id: Optional[UUID] = Query(None),
+    payload: Optional[dict] = Body(None),
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Sends message to chat session and returns AI response."""
+    return await _process_chat_message(
+        session_id=session_id,
+        notes_id=notes_id,
+        payload=payload,
+        current_user=current_user,
+        db=db
+    )
+
+
+@router.post("/sessions/{session_id}/messages")
+async def send_chat_message_path(
+    session_id: UUID = Path(...),
+    notes_id: Optional[UUID] = Query(None),
+    payload: Optional[dict] = Body(None),
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Sends message to chat session via path parameter."""
+    return await _process_chat_message(
+        session_id=session_id,
+        notes_id=notes_id,
+        payload=payload,
+        current_user=current_user,
+        db=db
+    )
 
 
 @router.get("/sessions", response_model=List[ChatSessionResponse])

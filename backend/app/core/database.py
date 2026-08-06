@@ -2,12 +2,17 @@ from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from app.core.config import settings
 
-# Create async engine for PostgreSQL connection using asyncpg
+# Create async engine supporting both PostgreSQL and SQLite
+connect_args = {}
+if "sqlite" in settings.DATABASE_URL:
+    connect_args["check_same_thread"] = False
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
     future=True,
-    pool_pre_ping=True,  # Test connections before returning them
+    pool_pre_ping=True,
+    connect_args=connect_args
 )
 
 # Async session factory
