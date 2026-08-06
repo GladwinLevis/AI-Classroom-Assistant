@@ -1,0 +1,28 @@
+# Dependencies & Virtualenvs
+node_modules
+.venv
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Build & Dist
+dist
+dist-ssr
+build
+*.egg-info
+.pytest_cache
+.coverage
+
+# Environment & Secrets
+.env
+*.env
+*.env.local
+
+# OS & IDE
+.DS_Store
+.vscode
+.idea
+*.log

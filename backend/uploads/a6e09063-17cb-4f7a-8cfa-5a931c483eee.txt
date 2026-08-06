@@ -1,0 +1,1 @@
+Alan Turing pioneered computation theory. The computer efficiency metric follows the ratio rule Ratio = Output / Input.
