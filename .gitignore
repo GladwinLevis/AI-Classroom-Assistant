@@ -8,6 +8,12 @@ __pycache__
 *.pyo
 *.pyd
 
+# Storage, Uploads & Vector Caches
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/vector_indices/*
+!backend/vector_indices/.gitkeep
+
 # Build & Dist
 dist
 dist-ssr

@@ -1,7 +1,0 @@
-Introduction to Python Programming.
-
-Python is a high-level, interpreted programming language. It is known for its readability and clean syntax.
-
-Formula representation of efficiency is Ratio = Output / Input. Alan Turing pioneered computing principles.
-
-Scalability is the ability of a system to grow handling more workload cleanly.
