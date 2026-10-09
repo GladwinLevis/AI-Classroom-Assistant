@@ -12,10 +12,14 @@ logger = logging.getLogger(__name__)
 
 from contextlib import asynccontextmanager
 from app.core.redis import redis_manager
+from app.core.database import engine
+from app.db.base import Base
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await redis_manager.connect()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield
 
 # Instantiate FastAPI application

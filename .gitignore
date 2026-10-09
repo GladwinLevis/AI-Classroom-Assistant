@@ -13,6 +13,9 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 backend/vector_indices/*
 !backend/vector_indices/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
 
 # Build & Dist
 dist

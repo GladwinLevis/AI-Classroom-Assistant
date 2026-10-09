@@ -74,7 +74,8 @@ def register_middleware(app: FastAPI) -> None:
     # CORS Middleware (Registered outer-most to ensure preflight & error responses receive CORS headers)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.BACKEND_CORS_ORIGINS,
+        allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
